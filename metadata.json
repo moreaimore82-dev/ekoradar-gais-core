@@ -1,0 +1,7 @@
+{
+  "name": "EkoRadar",
+  "description": "Türkiye ve dünya ekonomisine dair haber bültenlerini tarayan, PDF'leri okuyan ve günlük yönetici özeti çıkaran yapay zeka destekli uygulama.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

@@ -1,0 +1,67 @@
+<h2>Tarama Periyodu — Mevcut vs. Önerilen</h2>
+<p class="subtitle">Solda şu anki 4 butonlu yapı, sağda sadece günlük analiz için önerilen tasarım</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Mevcut — 4 Periyot</div>
+    <div class="mockup-body">
+      <div style="background:#18181b;padding:16px;border-radius:12px;font-family:monospace;">
+        <div style="color:#71717a;font-size:10px;font-weight:700;letter-spacing:.1em;margin-bottom:8px;">TARAMA PERİYODU</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button style="padding:8px;background:#2563eb;color:white;border:1.5px solid #2563eb;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">GÜNLÜK</button>
+          <button style="padding:8px;background:#27272a;color:#71717a;border:1.5px solid #3f3f46;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">HAFTALIK</button>
+          <button style="padding:8px;background:#27272a;color:#71717a;border:1.5px solid #3f3f46;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">AYLIK</button>
+          <button style="padding:8px;background:#27272a;color:#71717a;border:1.5px solid #3f3f46;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">YILLIK</button>
+        </div>
+        <div style="margin-top:16px;color:#71717a;font-size:10px;font-weight:700;letter-spacing:.1em;margin-bottom:8px;">REFERANS TARİH</div>
+        <div style="background:#27272a;border:1.5px solid #3f3f46;border-radius:10px;padding:10px 12px;color:#a1a1aa;font-size:12px;display:flex;align-items:center;gap:8px;">
+          📅 <span>2025-04-16</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Önerilen — Sadece Günlük</div>
+    <div class="mockup-body">
+      <div style="background:#18181b;padding:16px;border-radius:12px;font-family:monospace;">
+        <div style="color:#71717a;font-size:10px;font-weight:700;letter-spacing:.1em;margin-bottom:8px;">REFERANS TARİH</div>
+        <div style="background:#27272a;border:1.5px solid #3f3f46;border-radius:10px;padding:10px 12px;color:#a1a1aa;font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          📅 <span>2025-04-16</span>
+        </div>
+        <div style="background:#1e3a5f;border:1.5px solid #2563eb;border-radius:10px;padding:8px 12px;color:#93c5fd;font-size:11px;font-weight:700;text-align:center;letter-spacing:.05em;">
+          ✓ GÜNLÜK ANALİZ
+        </div>
+        <div style="margin-top:8px;color:#52525b;font-size:10px;text-align:center;">Sadece seçilen gün analiz edilir</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:32px;">
+  <h3>Başka hangi sorunları düzeltmek istiyorsunuz?</h3>
+  <p class="subtitle">Aşağıdaki bilinen sorunlardan hangilerini öncelikli görüyorsunuz?</p>
+  <div class="options" data-multiselect>
+    <div class="option" data-choice="archive-label" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Arşivdeki periyot etiketleri</h3>
+        <p>Arşivde "Haftalık/Aylık Analiz" yazıyor — bunlar "Günlük" olarak güncellenmeli</p>
+      </div>
+    </div>
+    <div class="option" data-choice="prompt" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>AI Prompt optimizasyonu</h3>
+        <p>Gemini'ye gönderilen promptta haftalık/aylık referansları temizlemek</p>
+      </div>
+    </div>
+    <div class="option" data-choice="other" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Başka sorunlar var</h3>
+        <p>Kaynak yönetimi, hata mesajları, performans vb. başka sorunlar</p>
+      </div>
+    </div>
+  </div>
+</div>

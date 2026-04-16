@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"/c/Program Files/nodejs:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin:$PATH\")",
+      "Bash(npx tsc *)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install *)",
+      "Bash(node_modules/.bin/tsx server.ts)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls -la '/c/Users/Lenovo/OneDrive/Desktop/ClaudeCode/ekoradar gais core/')",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(npm list *)"
+    ]
+  }
+}
