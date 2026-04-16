@@ -1,4 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 import { 
   Search, 
   Calendar as CalendarIcon, 
@@ -97,6 +102,8 @@ export default function App() {
   }>({ isOpen: false, title: '', action: () => {} });
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(() => localStorage.getItem('pwa_installed') === 'true');
   const [archive, setArchive] = useState<ArchiveItem[]>(() => {
     const saved = localStorage.getItem('ekoradar_archive');
     return saved ? JSON.parse(saved) : [];
@@ -167,7 +174,7 @@ export default function App() {
     setUserInput('');
     setAudioUrl(null);
     setIsPlaying(false);
-    setIsManualSelection(false);
+
     setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
     setSources(INITIAL_SOURCES);
   };
@@ -265,12 +272,34 @@ export default function App() {
   };
 
   const resetSources = () => {
-    setSources(INITIAL_SOURCES);
-    localStorage.removeItem('economic_analysis_sources');
+    setPasswordModal({
+      isOpen: true,
+      title: "Kaynakları sıfırlamak için şifreyi girin",
+      action: () => {
+        setSources(INITIAL_SOURCES);
+        localStorage.removeItem('economic_analysis_sources');
+      }
+    });
+  };
+
+  useEffect(() => {
+    const onBeforeInstall = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
+    const onInstalled = () => { setIsInstalled(true); setInstallPrompt(null); localStorage.setItem('pwa_installed', 'true'); };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => { window.removeEventListener('beforeinstallprompt', onBeforeInstall); window.removeEventListener('appinstalled', onInstalled); };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') { setIsInstalled(true); localStorage.setItem('pwa_installed', 'true'); }
+    setInstallPrompt(null);
   };
 
   const handlePasswordSubmit = () => {
-    if (passwordInput === "1453") {
+    if (passwordInput === "1304") {
       passwordModal.action();
       setPasswordModal({ ...passwordModal, isOpen: false });
       setPasswordInput('');
@@ -1103,6 +1132,22 @@ export default function App() {
             <MessageSquare className="w-6 h-6 group-hover:text-brand-accent" />
           </button>
         </div>
+
+        {/* PWA Install Button */}
+        <AnimatePresence>
+          {installPrompt && !isInstalled && (
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              onClick={handleInstall}
+              className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-3 rounded-2xl shadow-2xl border border-zinc-700 dark:border-zinc-200"
+            >
+              <Download className="w-4 h-4" />
+              <span className="text-sm font-bold">Uygulamayı Yükle</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* Archive Modal */}
         <AnimatePresence>
