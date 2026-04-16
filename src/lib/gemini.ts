@@ -91,13 +91,15 @@ export const generateEconomicSummary = async (date: string, sourcesData: { url: 
     Kaynak Listesi:
     ${urls.join('\n')}
 
-    Not: Bazı kaynakların ham metinleri aşağıda verilmiştir. 
-    Eğer bir kaynak sayfası (landing page) ise ve o sayfada PDF rapor linkleri varsa, 
-    belirlediğin tarihle eşleşen PDF'i okumak için 'scrapeUrl' aracını kullanmalısın. 
+    Not: Bazı kaynakların ham metinleri aşağıda verilmiştir.
+    Eğer bir kaynak sayfası (landing page/anasayfa/blog) ise:
+    - O sayfada ${date} tarihiyle eşleşen blog yazısı, makale veya haber linki varsa, 'scrapeUrl' aracıyla o linki oku.
+    - O sayfada PDF rapor linkleri varsa, tarihe uyan PDF'i 'scrapeUrl' ile oku.
+    - Blog sitelerinde tarih genellikle başlığın yanında veya URL'de bulunur (örn: /2026/04/16/).
     Bu araç hem web sayfalarını hem de PDF dosyalarını okuyabilir.
-    
+
     Ham Metin Örnekleri:
-    ${sourcesData.map(s => `URL: ${s.url}\nİçerik: ${s.content.substring(0, 1000)}`).join('\n\n---\n\n')}
+    ${sourcesData.map(s => `URL: ${s.url}\nİçerik: ${s.content.substring(0, 3000)}`).join('\n\n---\n\n')}
   `;
 
   const generateWithModel = async (modelName: string, isFallback = false) => {
