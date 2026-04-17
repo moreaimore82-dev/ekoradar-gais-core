@@ -1,3 +1,8 @@
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 import { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
@@ -22,6 +27,7 @@ import {
   Pause,
   RotateCcw,
   FastForward,
+  Download,
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
@@ -100,6 +106,7 @@ export default function App() {
   }>({ isOpen: false, title: '', action: () => {} });
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [archive, setArchive] = useState<ArchiveItem[]>(() => {
     const saved = localStorage.getItem('ekoradar_archive');
     return saved ? JSON.parse(saved) : [];
@@ -167,6 +174,21 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('ekoradar_sources', JSON.stringify(sources));
   }, [sources]);
+
+  useEffect(() => {
+    const onBeforeInstall = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
+    const onInstalled = () => { setInstallPrompt(null); };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => { window.removeEventListener('beforeinstallprompt', onBeforeInstall); window.removeEventListener('appinstalled', onInstalled); };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
 
   const resetApp = () => {
     setSummary(null);
@@ -472,13 +494,22 @@ export default function App() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="text-brand-accent w-8 h-8" />
-              <h1 
+              <h1
                 onClick={resetApp}
                 className="text-2xl font-serif font-bold tracking-tight cursor-pointer hover:text-brand-accent transition-colors"
               >
                 EkoRadar
               </h1>
             </div>
+            {installPrompt && (
+              <button
+                onClick={handleInstall}
+                title="Uygulamayı yükle"
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <Download className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
+              </button>
+            )}
           </div>
 
           {/* Market Data Ticker */}
