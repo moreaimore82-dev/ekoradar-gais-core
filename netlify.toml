@@ -3,6 +3,15 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  GEMINI_API_KEY = "AIzaSyDU8k92khb9eT2hCwuA6ZL8q6iAnpBm3IY"
+
+[functions.scrape]
+  timeout = 26
+
+[functions.market-data]
+  timeout = 26
+
 [[redirects]]
   from = "/api/system-info"
   to = "/.netlify/functions/system-info"
