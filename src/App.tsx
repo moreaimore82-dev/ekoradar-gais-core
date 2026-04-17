@@ -1,9 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
 import { 
   Search, 
   Calendar as CalendarIcon, 
@@ -27,7 +22,6 @@ import {
   Pause,
   RotateCcw,
   FastForward,
-  Download,
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
@@ -68,10 +62,14 @@ interface MarketItem {
   isDown: boolean;
 }
 
+
 const INITIAL_SOURCES: Source[] = [];
 
 export default function App() {
-  const [sources, setSources] = useState<Source[]>(INITIAL_SOURCES);
+  const [sources, setSources] = useState<Source[]>(() => {
+    const saved = localStorage.getItem('ekoradar_sources');
+    return saved ? JSON.parse(saved) : INITIAL_SOURCES;
+  });
   const [newUrl, setNewUrl] = useState('');
   const [newUrlError, setNewUrlError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Kullanıcı Tarafından Eklenen');
@@ -102,8 +100,6 @@ export default function App() {
   }>({ isOpen: false, title: '', action: () => {} });
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(() => localStorage.getItem('pwa_installed') === 'true');
   const [archive, setArchive] = useState<ArchiveItem[]>(() => {
     const saved = localStorage.getItem('ekoradar_archive');
     return saved ? JSON.parse(saved) : [];
@@ -168,6 +164,10 @@ export default function App() {
     localStorage.setItem('ekoradar_archive', JSON.stringify(archive));
   }, [archive]);
 
+  useEffect(() => {
+    localStorage.setItem('ekoradar_sources', JSON.stringify(sources));
+  }, [sources]);
+
   const resetApp = () => {
     setSummary(null);
     setChatMessages([]);
@@ -176,7 +176,6 @@ export default function App() {
     setIsPlaying(false);
 
     setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
-    setSources(INITIAL_SOURCES);
   };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -282,21 +281,6 @@ export default function App() {
     });
   };
 
-  useEffect(() => {
-    const onBeforeInstall = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
-    const onInstalled = () => { setIsInstalled(true); setInstallPrompt(null); localStorage.setItem('pwa_installed', 'true'); };
-    window.addEventListener('beforeinstallprompt', onBeforeInstall);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => { window.removeEventListener('beforeinstallprompt', onBeforeInstall); window.removeEventListener('appinstalled', onInstalled); };
-  }, []);
-
-  const handleInstall = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') { setIsInstalled(true); localStorage.setItem('pwa_installed', 'true'); }
-    setInstallPrompt(null);
-  };
 
   const handlePasswordSubmit = () => {
     if (passwordInput === "1304") {
@@ -307,6 +291,19 @@ export default function App() {
     } else {
       setPasswordError(true);
       setTimeout(() => setPasswordError(false), 2000);
+    }
+  };
+
+  const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutMs: number = 60000) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      return response;
+    } catch (error) {
+      clearTimeout(timeout);
+      throw error;
     }
   };
 
@@ -322,10 +319,9 @@ export default function App() {
     setIsSummarizing(false);
     setSummary(null);
 
-    // Reset dataFound for all sources before new scan
-    setSources(prev => prev.map(s => ({ ...s, dataFound: undefined, status: s.selected ? s.status : 'idle' })));
+    setSources(prev => prev.map(s => ({ ...s, status: s.selected ? s.status : 'idle' })));
 
-    const updatedSources = [...sources].map(s => ({ ...s, dataFound: undefined }));
+    const updatedSources = [...sources].map(s => ({ ...s }));
     const scrapedData: { url: string, content: string }[] = [];
 
     for (const source of selectedSources) {
@@ -336,7 +332,7 @@ export default function App() {
       setSources([...updatedSources]);
 
       try {
-        const response = await fetch('/api/scrape', {
+        const response = await fetchWithTimeout('/api/scrape', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -344,7 +340,7 @@ export default function App() {
             scanType: 'daily',
             selectedDate
           })
-        });
+        }, 70000);
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -352,29 +348,29 @@ export default function App() {
         }
 
         const data = await response.json();
-        const hasContent = data.content && data.content.trim().length > 100;
         updatedSources[sourceIndex].status = 'success';
         updatedSources[sourceIndex].content = data.content;
-        updatedSources[sourceIndex].dataFound = hasContent;
-        if (hasContent) {
-          scrapedData.push({ url: source.url, content: data.content });
-        }
+        scrapedData.push({ url: source.url, content: data.content || '' });
       } catch (error: any) {
         console.error(`Error scraping ${source.url}:`, error.message);
         updatedSources[sourceIndex].status = 'error';
-        updatedSources[sourceIndex].dataFound = false;
       }
       setSources([...updatedSources]);
     }
 
     setIsScraping(false);
 
-    if (scrapedData.length > 0) {
-      setIsSummarizing(true);
+    if (scrapedData.length === 0) {
+      toast.error("Kaynaklar taranamadı. Lütfen internet bağlantınızı veya kaynak URL'lerini kontrol edin.");
+      return;
+    }
+
+    setIsSummarizing(true);
+    {
       try {
         const result = await generateEconomicSummary(selectedDate, scrapedData);
         setSummary(result);
-        
+
         // Add to archive
         const newArchiveItem: ArchiveItem = {
           id: Math.random().toString(36).substr(2, 9),
@@ -639,14 +635,6 @@ export default function App() {
                                         <div className="flex items-center gap-1 mt-1">
                                           <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse" />
                                           <span className="text-[8px] text-zinc-400 uppercase font-bold tracking-tighter">Taranıyor...</span>
-                                        </div>
-                                      )}
-                                      {source.status !== 'idle' && source.status !== 'loading' && (
-                                        <div className="flex items-center gap-1 mt-1">
-                                          <div className={`w-1.5 h-1.5 rounded-full ${source.dataFound ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
-                                          <span className={`text-[8px] uppercase font-bold tracking-tighter ${source.dataFound ? 'text-green-500' : 'text-red-400'}`}>
-                                            {source.dataFound ? 'Veri Var' : 'Veri Yok'}
-                                          </span>
                                         </div>
                                       )}
                                     </div>
@@ -1133,21 +1121,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* PWA Install Button */}
-        <AnimatePresence>
-          {installPrompt && !isInstalled && (
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              onClick={handleInstall}
-              className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-3 rounded-2xl shadow-2xl border border-zinc-700 dark:border-zinc-200"
-            >
-              <Download className="w-4 h-4" />
-              <span className="text-sm font-bold">Uygulamayı Yükle</span>
-            </motion.button>
-          )}
-        </AnimatePresence>
 
         {/* Archive Modal */}
         <AnimatePresence>
